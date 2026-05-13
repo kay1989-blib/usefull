@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oneindige Kleuren Scanner</title>
+
+<style>
+    body{
+        font-family: Arial, sans-serif;
+        background:#111;
+        color:white;
+        padding:20px;
+    }
+
+    h1{
+        margin-bottom:20px;
+    }
+
+    input{
+        margin-bottom:20px;
+    }
+
+    img{
+        max-width:300px;
+        border-radius:12px;
+        margin-top:10px;
+    }
+
+    .colors{
+        display:grid;
+        grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+        gap:12px;
+        margin-top:30px;
+    }
+
+    .card{
+        background:#1c1c1c;
+        border:1px solid #333;
+        border-radius:12px;
+        overflow:hidden;
+        display:flex;
+        align-items:center;
+    }
+
+    .preview{
+        width:60px;
+        height:60px;
+        flex-shrink:0;
+    }
+
+    .info{
+        padding:10px;
+        overflow:hidden;
+    }
+
+    .hex{
+        font-weight:bold;
+        font-size:14px;
+    }
+
+    .count{
+        color:#aaa;
+        font-size:12px;
+        margin-top:4px;
+    }
+
+    canvas{
+        display:none;
+    }
+</style>
+</head>
+<body>
+
+<h1>Alle Kleuren Uit Afbeelding</h1>
+
+<input type="file" id="upload" accept="image/*">
+
+<br>
+<img id="preview">
+
+<canvas id="canvas"></canvas>
+
+<h2 id="total"></h2>
+
+<div class="colors" id="colors"></div>
+
+<script>
+const upload = document.getElementById("upload");
+const preview = document.getElementById("preview");
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const colorsDiv = document.getElementById("colors");
+const totalText = document.getElementById("total");
+
+upload.addEventListener("change", e => {
+
+    const file = e.target.files[0];
+    if(!file) return;
+
+    const img = new Image();
+
+    img.onload = () => {
+
+        preview.src = img.src;
+
+        canvas.width = img.width;
+        canvas.height = img.height;
+
+        ctx.drawImage(img,0,0);
+
+        const data = ctx.getImageData(
+            0,
+            0,
+            img.width,
+            img.height
+        ).data;
+
+        const colors = {};
+
+        // LEEST ELKE PIXEL
+        for(let i = 0; i < data.length; i += 4){
+
+            const r = data[i];
+            const g = data[i+1];
+            const b = data[i+2];
+
+            const hex = rgbToHex(r,g,b);
+
+            if(colors[hex]){
+                colors[hex]++;
+            } else {
+                colors[hex] = 1;
+            }
+        }
+
+        const entries = Object.entries(colors)
+            .sort((a,b) => b[1] - a[1]);
+
+        totalText.innerText =
+            `Totaal unieke kleuren: ${entries.length}`;
+
+        colorsDiv.innerHTML = "";
+
+        // TOONT ALLE KLEUREN
+        entries.forEach(([hex,count]) => {
+
+            const card = document.createElement("div");
+            card.className = "card";
+
+            card.innerHTML = `
+                <div class="preview"
+                     style="background:${hex}">
+                </div>
+
+                <div class="info">
+                    <div class="hex">${hex}</div>
+                    <div class="count">
+                        ${count} pixels
+                    </div>
+                </div>
+            `;
+
+            colorsDiv.appendChild(card);
+        });
+    };
+
+    img.src = URL.createObjectURL(file);
+});
+
+function rgbToHex(r,g,b){
+    return "#" + [r,g,b]
+        .map(x =>
+            x.toString(16)
+             .padStart(2,"0")
+        )
+        .join("")
+        .toUpperCase();
+}
+</script>
+
+</body>
+</html>
